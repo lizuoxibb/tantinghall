@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>军事综合集成研讨厅 · 战情室</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Microsoft YaHei','微软雅黑',monospace;background:#0a0e1a;color:#c8d8e8;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* topbar */
+.topbar{background:#0d1525;border-bottom:1px solid #1e3a5a;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:bold;color:#4fc3f7;letter-spacing:1px}
+.topbar-status{display:flex;gap:12px;font-size:12px;color:#7a9bb5}
+.status-badge{background:#1a2a3a;border:1px solid #2a4a6a;padding:2px 10px;border-radius:3px}
+.status-badge.active{border-color:#4fc3f7;color:#4fc3f7}
+.topbar-time{font-size:12px;color:#4a7a9b}
+/* layout */
+.main{display:flex;flex:1;overflow:hidden}
+/* left panel */
+.panel-left{width:265px;min-width:265px;background:#0d1525;border-right:1px solid #1e3a5a;display:flex;flex-direction:column;overflow:hidden}
+.panel-title{padding:8px 12px;font-size:12px;color:#4fc3f7;border-bottom:1px solid #1e3a5a;background:#0a1020;display:flex;align-items:center;justify-content:space-between}
+.panel-title-btns{display:flex;gap:4px}
+.phase-bar{padding:5px 8px;border-bottom:1px solid #1e3a5a;display:flex;gap:3px}
+.phase-step{flex:1;text-align:center;font-size:9px;padding:3px 2px;border-radius:2px;border:1px solid #1e3a5a;color:#4a7a9b;cursor:pointer;transition:all .15s}
+.phase-step.active{background:#0d2a4a;border-color:#4fc3f7;color:#4fc3f7}
+.phase-step.done{background:#0d2a1a;border-color:#4caf50;color:#4caf50}
+/* member list (normal mode) */
+.members-scroll{flex:1;overflow-y:auto;padding:4px 0}
+.members-scroll::-webkit-scrollbar{width:3px}
+.members-scroll::-webkit-scrollbar-thumb{background:#2a4a6a}
+.faction{margin:4px 6px}
+.faction-header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#111d2e;border-radius:4px;font-size:11px;cursor:pointer;user-select:none}
+.faction-header:hover{background:#172030}
+.faction-name{color:#c8d8e8;font-weight:bold;font-size:12px}
+.faction-weight{color:#4fc3f7;font-size:11px}
+.faction-weight-edit{background:#0a1a2e;border:1px solid #2a4a6a;color:#4fc3f7;width:38px;font-size:11px;padding:1px 4px;border-radius:2px;outline:none;display:none}
+.member{display:flex;align-items:center;padding:5px 8px 5px 16px;font-size:11px;cursor:pointer;border-radius:3px;transition:background .15s;gap:5px}
+.member:hover{background:#172030}
+.member.active-speaker{background:#112240;border-left:2px solid #4fc3f7}
+.member-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-online{background:#4caf50;box-shadow:0 0 4px #4caf50}
+.dot-offline{background:#607d8b}
+.dot-speaking{background:#4fc3f7;box-shadow:0 0 6px #4fc3f7;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.member-name{flex:1;color:#c8d8e8}
+.member-weight{color:#4a7a9b;font-size:10px}
+.member-type{font-size:9px;padding:1px 4px;border-radius:2px}
+.type-ai{background:#1a3a5a;color:#4fc3f7}
+.type-human{background:#2a3a1a;color:#8bc34a}
+/* edit mode overlays */
+.edit-overlay{display:none;position:absolute;right:4px;top:50%;transform:translateY(-50%);gap:3px}
+.member.edit-active{position:relative}
+.member.edit-active .edit-overlay{display:flex}
+.member-name-input{flex:1;background:#0a1a2e;border:1px solid #2a4a6a;color:#c8d8e8;font-size:11px;padding:1px 5px;border-radius:2px;outline:none;min-width:0}
+.member-weight-input{width:32px;background:#0a1a2e;border:1px solid #2a4a6a;color:#4fc3f7;font-size:10px;padding:1px 3px;border-radius:2px;outline:none}
+.btn-icon{padding:2px 5px;font-size:10px;border:1px solid #2a4a6a;background:#111d2e;color:#7a9bb5;border-radius:2px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-icon:hover{border-color:#4fc3f7;color:#4fc3f7}
+.btn-icon.del:hover{border-color:#f44336;color:#f44336}
+.btn-icon.add-member{border-color:#1e4a2a;color:#4caf50;width:100%;margin:2px 0;font-size:10px;background:#0a1a0a}
+.btn-icon.add-member:hover{background:#112211;border-color:#4caf50}
+/* panel actions */
+.panel-actions{padding:7px 8px;border-top:1px solid #1e3a5a;display:flex;flex-wrap:wrap;gap:4px}
+.btn-sm{padding:4px 8px;font-size:10px;border:1px solid #2a4a6a;background:#111d2e;color:#7a9bb5;border-radius:3px;cursor:pointer;transition:all .15s}
+.btn-sm:hover{border-color:#4fc3f7;color:#4fc3f7;background:#0d1a2e}
+.btn-sm.primary{border-color:#4fc3f7;color:#4fc3f7}
+.btn-sm.danger{border-color:#f44336;color:#f44336}
+.btn-sm.gold{border-color:#f0a500;color:#f0a500}
+/* center */
+.panel-center{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#080e1a}
+.chat-header{padding:8px 16px;border-bottom:1px solid #1e3a5a;background:#0a1020;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-title{font-size:13px;font-weight:bold;color:#c8d8e8}
+.chat-mode{font-size:11px;color:#f0a500;background:#2a1a00;border:1px solid #f0a500;padding:2px 8px;border-radius:3px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:#2a4a6a;border-radius:2px}
+/* messages */
+.msg{display:flex;flex-direction:column;gap:3px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-header{display:flex;align-items:center;gap:8px}
+.msg-time{font-size:10px;color:#4a7a9b}
+.msg-sender{font-size:11px;font-weight:bold}
+.msg-sender.system{color:#f0a500}
+.msg-sender.us{color:#4fc3f7}
+.msg-sender.cn{color:#ff9800}
+.msg-sender.ru{color:#e53935}
+.msg-sender.host{color:#8bc34a}
+.msg-sender.custom{color:#ce93d8}
+.msg-tag{font-size:9px;padding:1px 5px;border-radius:2px}
+.tag-ai{background:#1a3a5a;color:#4fc3f7}
+.tag-human{background:#1a3a1a;color:#8bc34a}
+.tag-system{background:#3a2a00;color:#f0a500}
+.msg-body{background:#0d1525;border:1px solid #1e3a5a;border-radius:0 6px 6px 6px;padding:8px 12px;font-size:12px;line-height:1.7;color:#c8d8e8;margin-left:4px;transition:border-left .3s}
+.msg-body.system-msg{background:#1a1200;border-color:#f0a500;border-left:3px solid #f0a500}
+.msg-body.intel-msg{background:#1a1200;border-color:#f0a500}
+.intel-badge{display:inline-block;background:#f0a500;color:#000;font-size:9px;padding:1px 5px;border-radius:2px;margin-bottom:4px;font-weight:bold}
+/* review states */
+.review-pending .msg-body{border-left:3px solid #607d8b}
+.review-approved .msg-body{border-left:3px solid #4caf50}
+.review-rejected .msg-body{border-left:3px solid #f44336;opacity:.75}
+.review-edited .msg-body{border-left:3px solid #ff9800}
+.msg-footer{display:flex;align-items:center;gap:6px;margin-left:4px;flex-wrap:wrap;margin-top:2px}
+.confidence-badge{font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid}
+.conf-high{border-color:#4caf50;color:#4caf50;background:#0a1a0a}
+.conf-mid{border-color:#f0a500;color:#f0a500;background:#1a1200}
+.conf-low{border-color:#f44336;color:#f44336;background:#1a0a0a}
+.conf-change{font-size:10px;color:#7a9bb5}
+.btn-action{font-size:10px;padding:2px 7px;border:1px solid #2a4a6a;background:transparent;color:#7a9bb5;border-radius:2px;cursor:pointer;transition:all .15s}
+.btn-action:hover{border-color:#4fc3f7;color:#4fc3f7}
+.btn-action.active{border-color:#4caf50;color:#4caf50}
+.verify-tag{font-size:10px;padding:2px 7px;background:#2a0a0a;border:1px solid #f44336;color:#f44336;border-radius:2px}
+.verify-tag.ok{background:#0a2a0a;border-color:#4caf50;color:#4caf50}
+.review-status-tag{font-size:10px;padding:2px 8px;border-radius:2px;font-weight:bold}
+.rst-pending{background:#1a2a3a;color:#607d8b;border:1px solid #607d8b}
+.rst-approved{background:#0a2a0a;color:#4caf50;border:1px solid #4caf50}
+.rst-rejected{background:#2a0a0a;color:#f44336;border:1px solid #f44336}
+.rst-edited{background:#2a1a00;color:#ff9800;border:1px solid #ff9800}
+.review-btns{display:flex;gap:4px}
+.rbtn{font-size:10px;padding:2px 8px;border-radius:2px;cursor:pointer;border:1px solid;transition:all .15s}
+.rbtn.approve{border-color:#2a4a2a;color:#4caf50;background:transparent}
+.rbtn.approve:hover{background:#0a2a0a}
+.rbtn.reject{border-color:#4a2a2a;color:#f44336;background:transparent}
+.rbtn.reject:hover{background:#2a0a0a}
+.rbtn.edit{border-color:#4a3a10;color:#ff9800;background:transparent}
+.rbtn.edit:hover{background:#2a1a00}
+.trigger-notice{background:#1a1200;border:1px solid #f0a500;border-radius:4px;padding:6px 12px;font-size:11px;color:#f0a500;display:flex;align-items:center;gap:8px;margin:3px 0}
+/* inline edit */
+.inline-edit-area{display:none;margin-left:4px;margin-top:4px}
+.inline-edit-area textarea{width:100%;background:#111d2e;border:1px solid #ff9800;color:#c8d8e8;padding:7px 10px;border-radius:4px;font-size:12px;font-family:inherit;outline:none;resize:vertical;min-height:60px}
+.inline-edit-area .iea-btns{display:flex;gap:6px;margin-top:5px}
+/* chat input */
+.chat-input{padding:10px 16px;border-top:1px solid #1e3a5a;background:#0a1020;flex-shrink:0}
+.quick-btns{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap}
+.quick-btn{font-size:10px;padding:3px 8px;border:1px solid #2a4a6a;background:#0d1525;color:#7a9bb5;border-radius:3px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.quick-btn:hover{border-color:#4fc3f7;color:#4fc3f7}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.input-upload{font-size:18px;cursor:pointer;color:#4a7a9b;padding:6px;border:1px dashed #2a4a6a;border-radius:4px;transition:all .15s;flex-shrink:0}
+.input-upload:hover{border-color:#4fc3f7;color:#4fc3f7}
+.input-box{flex:1;background:#111d2e;border:1px solid #2a4a6a;border-radius:4px;padding:8px 12px;color:#c8d8e8;font-size:12px;font-family:inherit;resize:none;outline:none;min-height:38px;max-height:80px}
+.input-box:focus{border-color:#4fc3f7}
+.input-box::placeholder{color:#3a5a7a}
+.btn-send{padding:8px 18px;background:#0d2a4a;border:1px solid #4fc3f7;color:#4fc3f7;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .15s;flex-shrink:0}
+.btn-send:hover{background:#1a4a7a}
+/* right panel */
+.panel-right{width:295px;min-width:295px;background:#0d1525;border-left:1px solid #1e3a5a;display:flex;flex-direction:column;overflow-y:auto}
+.panel-right::-webkit-scrollbar{width:4px}
+.panel-right::-webkit-scrollbar-thumb{background:#2a4a6a}
+.dashboard-section{padding:10px 12px;border-bottom:1px solid #1a2a3a}
+.dash-title{font-size:11px;color:#4fc3f7;margin-bottom:8px;display:flex;align-items:center;gap:4px;font-weight:bold}
+.metric-label{font-size:11px;color:#7a9bb5;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
+.metric-val{color:#c8d8e8;font-weight:bold}
+.metric-change{font-size:10px}
+.metric-change.down{color:#f44336}
+.metric-change.up{color:#4caf50}
+.progress-bar{height:6px;background:#1a2a3a;border-radius:3px;margin-bottom:8px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.fill-blue{background:linear-gradient(90deg,#1565c0,#4fc3f7)}
+.fill-orange{background:linear-gradient(90deg,#e65100,#ff9800)}
+.fill-green{background:linear-gradient(90deg,#1b5e20,#4caf50)}
+.fill-red{background:linear-gradient(90deg,#b71c1c,#f44336)}
+.big-metric{text-align:center;padding:8px 0}
+.big-num{font-size:32px;font-weight:bold;color:#4fc3f7}
+.big-num.warning{color:#f44336}
+.big-label{font-size:11px;color:#7a9bb5;margin-top:2px}
+.big-change{font-size:12px;color:#f44336;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px}
+.conflict-item{background:#1a0a0a;border:1px solid #c62828;border-radius:4px;padding:6px 8px;margin-bottom:6px;font-size:11px}
+.conflict-title{color:#ef5350;font-weight:bold;margin-bottom:3px}
+.conflict-detail{color:#9e9e9e;font-size:10px}
+.conflict-gap{color:#f44336;font-size:10px;margin-top:2px}
+.gap-item{background:#1a1200;border:1px solid #f57f17;border-radius:3px;padding:4px 8px;font-size:10px;color:#ffa000;margin-bottom:4px}
+.export-btns{display:flex;flex-wrap:wrap;gap:4px;padding:10px 12px}
+.btn-export{padding:5px 10px;font-size:10px;border:1px solid #2a4a6a;background:#111d2e;color:#7a9bb5;border-radius:3px;cursor:pointer;transition:all .15s}
+.btn-export:hover{border-color:#4fc3f7;color:#4fc3f7}
+.round-badge{background:#1a3a5a;color:#4fc3f7;font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid #4fc3f7}
+/* review stats in right panel */
+.review-stat{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.rstat{font-size:10px;padding:2px 8px;border-radius:2px;border:1px solid}
+.rstat.approved{border-color:#4caf50;color:#4caf50;background:#0a1a0a}
+.rstat.pending{border-color:#607d8b;color:#607d8b;background:#111d2e}
+.rstat.rejected{border-color:#f44336;color:#f44336;background:#1a0a0a}
+.rstat.edited{border-color:#ff9800;color:#ff9800;background:#1a1200}
+/* modals */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#0d1525;border:1px solid #2a4a6a;border-radius:6px;width:500px;max-width:94vw;padding:20px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:14px;color:#4fc3f7;font-weight:bold;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.modal label{font-size:11px;color:#7a9bb5;display:block;margin-bottom:4px;margin-top:10px}
+.modal input,.modal select,.modal textarea{width:100%;background:#111d2e;border:1px solid #2a4a6a;color:#c8d8e8;padding:7px 10px;border-radius:4px;font-size:12px;font-family:inherit;outline:none}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:#4fc3f7}
+.modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.btn-cancel{padding:6px 16px;background:transparent;border:1px solid #2a4a6a;color:#7a9bb5;border-radius:4px;cursor:pointer;font-size:12px}
+.btn-confirm{padding:6px 16px;background:#0d2a4a;border:1px solid #4fc3f7;color:#4fc3f7;border-radius:4px;cursor:pointer;font-size:12px}
+.btn-confirm.danger{border-color:#f44336;color:#f44336;background:#1a0a0a}
+/* vote */
+.vote-options{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.vote-option{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#111d2e;border:1px solid #2a4a6a;border-radius:4px;cursor:pointer;transition:all .15s}
+.vote-option:hover{border-color:#4fc3f7}
+.vote-option.selected{border-color:#4fc3f7;background:#0d2a4a}
+.vote-label{flex:1;font-size:12px}
+.vote-pct{font-size:11px;color:#4fc3f7}
+/* review summary modal */
+.review-list-item{padding:8px 10px;border:1px solid #1e3a5a;border-radius:4px;margin-bottom:6px;font-size:11px}
+.review-list-item .rli-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.review-list-item .rli-text{color:#9aa8b8;font-size:11px;max-height:40px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.review-list-item .rli-btns{display:flex;gap:4px;margin-top:6px}
+/* toast */
+.toast{position:fixed;bottom:20px;right:20px;background:#0d2a4a;border:1px solid #4fc3f7;color:#4fc3f7;padding:8px 16px;border-radius:4px;font-size:12px;z-index:200;display:none;animation:slideIn .3s ease}
+.toast.show{display:block}
+.toast.warn{background:#2a1a00;border-color:#f0a500;color:#f0a500}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+
+<style id="login-wall-style">
+/* ── Login wall overlay ── */
+#login-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: linear-gradient(135deg, #060c18 0%, #0a1428 60%, #060c18 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+}
+#login-wall .lw-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+#login-wall .lw-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(79,195,247,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,195,247,.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+#login-wall .lw-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79,195,247,.35) 0%, transparent 70%);
+  animation: lw-pulse 4s ease-in-out infinite;
+}
+#login-wall .lw-dot:nth-child(1){ width:400px;height:400px;top:-100px;left:-100px;animation-delay:0s; }
+#login-wall .lw-dot:nth-child(2){ width:300px;height:300px;bottom:-80px;right:-60px;animation-delay:2s; }
+@keyframes lw-pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.7;transform:scale(1.08)}}
+
+#login-wall .lw-box {
+  position: relative;
+  z-index: 1;
+  background: rgba(13,21,37,.92);
+  border: 1px solid rgba(79,195,247,.3);
+  border-radius: 12px;
+  padding: 48px 52px 44px;
+  width: 400px;
+  box-shadow: 0 0 60px rgba(79,195,247,.12), 0 24px 48px rgba(0,0,0,.5);
+}
+#login-wall .lw-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+#login-wall .lw-icon {
+  width: 46px;
+  height: 46px;
+  border: 2px solid #4fc3f7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #4fc3f7;
+  flex-shrink: 0;
+}
+#login-wall .lw-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e8f4fd;
+  line-height: 1.3;
+  letter-spacing: .5px;
+}
+#login-wall .lw-subtitle {
+  font-size: 12px;
+  color: #4fc3f7;
+  margin-top: 3px;
+  letter-spacing: 2px;
+}
+#login-wall .lw-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(79,195,247,.4), transparent);
+  margin-bottom: 28px;
+}
+#login-wall .lw-field {
+  margin-bottom: 18px;
+}
+#login-wall .lw-label {
+  font-size: 11px;
+  color: #4a7a9b;
+  letter-spacing: 1px;
+  margin-bottom: 7px;
+}
+#login-wall .lw-input {
+  width: 100%;
+  background: rgba(10,20,40,.8);
+  border: 1px solid rgba(79,195,247,.25);
+  border-radius: 6px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: #c8d8e8;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  font-family: inherit;
+  letter-spacing: 1px;
+}
+#login-wall .lw-input:focus {
+  border-color: #4fc3f7;
+  box-shadow: 0 0 0 3px rgba(79,195,247,.1);
+}
+#login-wall .lw-input::placeholder { color: #2a4a6a; }
+#login-wall .lw-btn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #1565a8, #1976d2);
+  border: 1px solid #4fc3f7;
+  border-radius: 6px;
+  color: #e8f4fd;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 8px;
+  font-family: inherit;
+}
+#login-wall .lw-btn:hover {
+  background: linear-gradient(135deg, #1976d2, #1e88e5);
+  box-shadow: 0 4px 20px rgba(79,195,247,.3);
+  transform: translateY(-1px);
+}
+#login-wall .lw-btn:active { transform: translateY(0); }
+#login-wall .lw-btn.lw-loading {
+  opacity: .7; cursor: not-allowed; transform: none;
+}
+#login-wall .lw-error {
+  font-size: 12px;
+  color: #ef5350;
+  text-align: center;
+  margin-top: 14px;
+  min-height: 18px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+#login-wall .lw-error.show { opacity: 1; }
+#login-wall .lw-footer {
+  text-align: center;
+  font-size: 11px;
+  color: #2a4a6a;
+  margin-top: 28px;
+  letter-spacing: 1px;
+}
+/* shake animation on wrong password */
+@keyframes lw-shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+#login-wall .lw-box.shake { animation: lw-shake .4s ease; }
+</style>
+
+</head>
+<body>
+
+<div id="login-wall">
+  <div class="lw-bg">
+    <div class="lw-grid"></div>
+    <div class="lw-dot"></div>
+    <div class="lw-dot"></div>
+  </div>
+  <div class="lw-box" id="lw-box">
+    <div class="lw-logo">
+      <div class="lw-icon">⚔</div>
+      <div>
+        <div class="lw-title">XXXX研讨厅</div>
+        <div class="lw-subtitle">STRATEGIC ANALYSIS PLATFORM</div>
+      </div>
+    </div>
+    <div class="lw-divider"></div>
+    <div class="lw-field">
+      <div class="lw-label">账 号</div>
+      <input class="lw-input" id="lw-user" type="text"
+             placeholder="请输入账号" autocomplete="username" spellcheck="false"/>
+    </div>
+    <div class="lw-field">
+      <div class="lw-label">密 码</div>
+      <input class="lw-input" id="lw-pass" type="password"
+             placeholder="请输入密码" autocomplete="current-password"/>
+    </div>
+    <button class="lw-btn" id="lw-btn" onclick="lwLogin()">进 入 系 统</button>
+    <div class="lw-error" id="lw-err">账号或密码错误，请重试</div>
+    <div class="lw-footer">AUTHORIZED ACCESS ONLY</div>
+  </div>
+</div>
+
+<!-- 顶部标题栏 -->
+<div class="topbar">
+  <div class="topbar-title">🛡 军事综合集成研讨厅 · SIW</div>
+  <div class="topbar-status">
+    <span class="status-badge active">⚡ 实时研讨中</span>
+    <span class="status-badge" id="phaseLabel">阶段：发散</span>
+    <span class="status-badge round-badge" id="roundLabel">第1轮</span>
+  </div>
+  <div class="topbar-time" id="clockEl"></div>
+</div>
+
+<div class="main">
+<!-- ===== 左侧面板 ===== -->
+<div class="panel-left">
+  <div class="panel-title">
+    <span>★ 战情室成员</span>
+    <div class="panel-title-btns">
+      <button class="btn-sm" id="editToggleBtn" onclick="toggleEditMode()">⚙ 编辑</button>
+      <button class="btn-sm" id="addFactionBtn" style="display:none" onclick="openAddFactionModal()">+ 阵营</button>
+    </div>
+  </div>
+  <div class="phase-bar">
+    <div class="phase-step active" id="ph0" onclick="jumpPhase(0)">发散</div>
+    <div class="phase-step" id="ph1" onclick="jumpPhase(1)">辩论</div>
+    <div class="phase-step" id="ph2" onclick="jumpPhase(2)">收敛</div>
+    <div class="phase-step" id="ph3" onclick="jumpPhase(3)">检验</div>
+  </div>
+  <div class="members-scroll" id="membersScroll"></div>
+  <div class="panel-actions">
+    <button class="btn-sm" onclick="openIntelModal()">📡 注入情报</button>
+    <button class="btn-sm primary" onclick="triggerVote()">🗳 投票</button>
+    <button class="btn-sm" onclick="triggerNextRound()">▶ 下一轮</button>
+    <button class="btn-sm gold" onclick="openReviewPanel()">🔍 终审</button>
+    <button class="btn-sm" onclick="lockConclusion()">🔒 锁定</button>
+    <button class="btn-sm danger" onclick="resetSession()">↺ 重置</button>
+  </div>
+</div>
+
+<!-- ===== 中央讨论区 ===== -->
+<div class="panel-center">
+  <div class="chat-header">
+    <div class="chat-title">战情室讨论区</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:11px;color:#4a7a9b">研判：<strong style="color:#c8d8e8">美对古巴——打不打/何时打/怎么打</strong></span>
+      <span class="chat-mode" id="chatModeLabel">⚡ 发散阶段</span>
+    </div>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div id="scrollAnchor"></div>
+  </div>
+  <div class="chat-input">
+    <div class="quick-btns" id="quickBtns"></div>
+    <div class="input-row">
+      <span class="input-upload" title="注入情报" onclick="openIntelModal()">📎</span>
+      <textarea class="input-box" id="inputBox" placeholder="输入研判意见（Enter发送，Shift+Enter换行）..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHuman()}"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button class="btn-send" onclick="sendHuman()">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 右侧看板 ===== -->
+<div class="panel-right">
+  <div class="dashboard-section">
+    <div class="dash-title">📊 态势仪表盘</div>
+    <div class="big-metric">
+      <div class="big-num warning" id="mainProb">32%</div>
+      <div class="big-label">综合研判：打不打概率</div>
+      <div class="big-change" id="mainProbChange">▼ 下降11%（新情报修正）</div>
+    </div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">⏰ 时机概率分布</div>
+    <div class="metric-label"><span>3月内</span><span class="metric-val" id="t1">8%</span><span class="metric-change down">▼-14%</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-red" id="t1bar" style="width:8%"></div></div>
+    <div class="metric-label"><span>3-6个月</span><span class="metric-val" id="t2">34%</span><span class="metric-change" style="color:#7a9bb5">→</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-orange" id="t2bar" style="width:34%"></div></div>
+    <div class="metric-label"><span>6个月以上</span><span class="metric-val" id="t3">58%</span><span class="metric-change up">▲+18%</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-blue" id="t3bar" style="width:58%"></div></div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">⚔ 打法概率分布</div>
+    <div class="metric-label"><span>有限精确打击</span><span class="metric-val" id="s1">22%</span><span class="metric-change down">▼-26%</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-red" id="s1bar" style="width:22%"></div></div>
+    <div class="metric-label"><span>多域联合闪击</span><span class="metric-val" id="s2">25%</span><span class="metric-change" style="color:#7a9bb5">→</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-orange" id="s2bar" style="width:25%"></div></div>
+    <div class="metric-label"><span>代理人+封锁</span><span class="metric-val" id="s3">52%</span><span class="metric-change up">▲+25%</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-green" id="s3bar" style="width:52%"></div></div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">🔍 人工终审状态</div>
+    <div class="review-stat">
+      <span class="rstat approved" id="rstat-approved">✓ 批准 0</span>
+      <span class="rstat pending" id="rstat-pending">⏳ 待审 0</span>
+      <span class="rstat rejected" id="rstat-rejected">✗ 驳回 0</span>
+      <span class="rstat edited" id="rstat-edited">✏ 修改 0</span>
+    </div>
+    <div style="margin-top:6px">
+      <button class="btn-sm gold" style="width:100%;font-size:10px" onclick="openReviewPanel()">打开终审面板</button>
+    </div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">🚨 关键分歧</div>
+    <div class="conflict-item">
+      <div class="conflict-title">⚡ 国防部长 vs 国务卿</div>
+      <div class="conflict-detail">军事可行性 vs 外交代价</div>
+      <div class="conflict-gap">分歧度：高（25pp）</div>
+    </div>
+    <div class="conflict-item" id="conflictS400" style="display:none">
+      <div class="conflict-title">⚡ S-400部署确认争议</div>
+      <div class="conflict-detail">中方：可能伪装/欺骗</div>
+      <div class="conflict-gap">分歧度：中（情报缺口）</div>
+    </div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">🔍 情报缺口</div>
+    <div class="gap-item">⚠ S-400确认度待核验</div>
+    <div class="gap-item">⚠ 俄方介入意图不明</div>
+    <div class="gap-item" id="gapExtra" style="display:none">⚠ 美古秘密外交渠道状态</div>
+  </div>
+  <div class="dashboard-section">
+    <div class="dash-title">📋 研讨进度</div>
+    <div class="metric-label"><span>当前轮次</span><span class="metric-val" id="roundNum">第1轮</span></div>
+    <div class="metric-label"><span>发言条数</span><span class="metric-val" id="msgCount">0</span></div>
+    <div class="metric-label"><span>收敛状态</span><span class="metric-val" id="convStatus" style="color:#f0a500">发散中</span></div>
+    <div class="metric-label"><span>结论状态</span><span class="metric-val" id="lockStatus" style="color:#607d8b">未锁定</span></div>
+  </div>
+  <div class="export-btns">
+    <button class="btn-export" onclick="exportReport()">📄 导出报告</button>
+    <button class="btn-export" onclick="showToast('JSON导出演示')">📦 JSON</button>
+    <button class="btn-export" onclick="window.print()">🖨 打印</button>
+  </div>
+</div>
+</div>
+
+<!-- ===== 情报注入模态框 ===== -->
+<div class="modal-overlay" id="intelModal">
+  <div class="modal">
+    <div class="modal-title">📡 注入新情报</div>
+    <label>情报来源</label>
+    <select id="intelSource">
+      <option value="GEOINT">GEOINT（卫星影像）</option>
+      <option value="OSINT">OSINT（开源情报）</option>
+      <option value="SIGINT">SIGINT（信号情报）</option>
+      <option value="内部报告">内部报告</option>
+    </select>
+    <label>可信度</label>
+    <select id="intelCred">
+      <option value="0.92">★★★★★ 0.92 — 官方/权威</option>
+      <option value="0.78" selected>★★★★☆ 0.78 — 专业平台</option>
+      <option value="0.55">★★★☆☆ 0.55 — 综合媒体</option>
+      <option value="0.35">★★☆☆☆ 0.35 — 自媒体</option>
+    </select>
+    <label>情报内容</label>
+    <textarea id="intelContent" rows="4" placeholder="输入情报内容...">卫星影像显示，俄罗斯货船"乌里扬诺夫斯克号"停靠哈瓦那港，甲板疑似装载S-400防空系统组件，尺寸与已知S-400发射车吻合。</textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('intelModal')">取消</button>
+      <button class="btn-confirm" onclick="injectIntel()">注入并触发二次研判</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 投票模态框 ===== -->
+<div class="modal-overlay" id="voteModal">
+  <div class="modal">
+    <div class="modal-title">🗳 加权投票</div>
+    <div style="font-size:12px;color:#7a9bb5;margin-bottom:8px">问题：当前局势下，美对古巴采取军事行动的可能性？</div>
+    <div class="vote-options">
+      <div class="vote-option" onclick="selectVote(this,'极低（＜20%）')"><span class="vote-label">极低（＜20%）</span><span class="vote-pct">0%</span></div>
+      <div class="vote-option selected" onclick="selectVote(this,'较低（20-35%）')"><span class="vote-label">较低（20-35%）</span><span class="vote-pct">32%</span></div>
+      <div class="vote-option" onclick="selectVote(this,'中等（35-55%）')"><span class="vote-label">中等（35-55%）</span><span class="vote-pct">43%</span></div>
+      <div class="vote-option" onclick="selectVote(this,'较高（55-75%）')"><span class="vote-label">较高（55-75%）</span><span class="vote-pct">68%</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('voteModal')">取消</button>
+      <button class="btn-confirm" onclick="submitVote()">提交投票</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 驳回原因模态框 ===== -->
+<div class="modal-overlay" id="rejectModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">✗ 驳回发言</div>
+    <div id="rejectMsgPreview" style="font-size:11px;color:#9aa8b8;background:#111d2e;padding:8px;border-radius:4px;max-height:60px;overflow:hidden;margin-bottom:4px"></div>
+    <label>驳回原因</label>
+    <textarea id="rejectReason" rows="3" placeholder="请说明驳回理由..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('rejectModal')">取消</button>
+      <button class="btn-confirm danger" onclick="confirmReject()">确认驳回并要求重新发言</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增成员模态框 ===== -->
+<div class="modal-overlay" id="addMemberModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">+ 新增成员</div>
+    <label>阵营</label>
+    <select id="newMemberFaction"></select>
+    <label>姓名/角色</label>
+    <input id="newMemberName" type="text" placeholder="如：海军上将、CIA副局长...">
+    <label>决策权重（0.1-1.0）</label>
+    <input id="newMemberWeight" type="number" min="0.1" max="1.0" step="0.1" value="0.5">
+    <label>类型</label>
+    <select id="newMemberType">
+      <option value="AI">AI Agent</option>
+      <option value="human">真人专家</option>
+    </select>
+    <label>立场倾向</label>
+    <select id="newMemberStance">
+      <option value="hawk">鹰派（主张强硬行动）</option>
+      <option value="dove">鸽派（主张外交协商）</option>
+      <option value="neutral">中立（数据/事实导向）</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('addMemberModal')">取消</button>
+      <button class="btn-confirm" onclick="confirmAddMember()">添加成员</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增阵营模态框 ===== -->
+<div class="modal-overlay" id="addFactionModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">+ 新增阵营</div>
+    <label>阵营名称</label>
+    <input id="newFactionName" type="text" placeholder="如：联合国、古巴...">
+    <label>阵营整体权重</label>
+    <input id="newFactionWeight" type="number" min="0.01" max="1.0" step="0.05" value="0.10">
+    <label>阵营颜色标识</label>
+    <select id="newFactionColor">
+      <option value="us">蓝色（类美方）</option>
+      <option value="cn">橙色（类中方）</option>
+      <option value="ru">红色（类俄方）</option>
+      <option value="host">绿色（主持/中立）</option>
+      <option value="custom">紫色（自定义）</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('addFactionModal')">取消</button>
+      <button class="btn-confirm" onclick="confirmAddFaction()">创建阵营</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 人工终审面板 ===== -->
+<div class="modal-overlay" id="reviewPanel">
+  <div class="modal" style="width:640px;max-height:80vh">
+    <div class="modal-title">🔍 人工终审面板
+      <span style="font-size:11px;color:#7a9bb5;font-weight:normal;margin-left:auto" id="reviewPanelStats"></span>
+    </div>
+    <div style="font-size:11px;color:#7a9bb5;margin-bottom:10px">对所有AI发言逐条审核。批准后计入有效结论，驳回后AI将重新发言，修改后保留修改版本。</div>
+    <div id="reviewListContainer" style="max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="approveAll()">✓ 全部批准</button>
+      <button class="btn-confirm" onclick="closeModal('reviewPanel')">完成终审</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 数据结构：阵营 + 成员（动态可编辑）
+// ============================================================
+let FACTIONS = [
+  { id:'us',   name:'美国',      weight:0.85, color:'us'   },
+  { id:'cn',   name:'中国',      weight:0.10, color:'cn'   },
+  { id:'ru',   name:'俄罗斯',    weight:0.05, color:'ru'   },
+  { id:'host', name:'主持/真人', weight:1.0,  color:'host' },
+];
+
+let MEMBERS = [
+  { id:'president', factionId:'us',   name:'总统',        weight:1.0, type:'AI',    status:'online',   stance:'hawk' },
+  { id:'defense',   factionId:'us',   name:'国防部长',    weight:0.8, type:'AI',    status:'speaking', stance:'hawk' },
+  { id:'state',     factionId:'us',   name:'国务卿',      weight:0.6, type:'AI',    status:'online',   stance:'dove' },
+  { id:'econ',      factionId:'us',   name:'经济顾问',    weight:0.6, type:'AI',    status:'online',   stance:'neutral' },
+  { id:'intel',     factionId:'us',   name:'情报总监',    weight:0.7, type:'AI',    status:'online',   stance:'neutral' },
+  { id:'cn',        factionId:'cn',   name:'外事专家',    weight:1.0, type:'AI',    status:'offline',  stance:'dove' },
+  { id:'ru',        factionId:'ru',   name:'地缘战略学者',weight:1.0, type:'AI',    status:'offline',  stance:'neutral' },
+  { id:'host',      factionId:'host', name:'协调主持师',  weight:1.0, type:'AI',    status:'speaking', stance:'neutral' },
+  { id:'you',       factionId:'host', name:'您（专家）',  weight:1.0, type:'human', status:'online',   stance:'neutral' },
+];
+
+// ============================================================
+// AI发言库：按阶段+情景分层（每层多条，不重复）
+// ============================================================
+const SPEECH_BANK = {
+  host: {
+    散: [
+      { conf:null, text:'本次研讨聚焦三大核心问题：①打不打（美方行动概率）②何时打（时机窗口）③怎么打（作战打法序列）。请各方先陈述初步判断，无需达成共识。情报总监，请先给出当前情报完整性评估。' },
+      { conf:null, text:'发散阶段持续中。目前收到美国阵营三个维度的初步评估。请中方和俄方给出外部视角的补充判断，形成多方参照基准。' },
+    ],
+    辩: [
+      { conf:null, text:'进入辩论阶段。识别到核心分歧：{lastRef}。请国防部长与国务卿就行动概率的核心差异（约25pp）展开正面论证。S-400情报真实性是关键变量。' },
+      { conf:null, text:'辩论阶段深化。{lastRef}的分析揭示了情报缺口对决策的根本性影响。请各方明确：若S-400确认，各自立场如何调整？给出量化范围。' },
+    ],
+    收: [
+      { conf:null, text:'建议进入收敛阶段。综合{lastRef}等各方意见，代理人+封锁方案获得最多支持。下面发起加权投票，锁定当前最优共识结论。' },
+      { conf:null, text:'收敛阶段：各方基本接受"6个月以上观望"的时机判断。最大分歧已缩小至10pp以内，满足收敛阈值。请发起最终投票确认。' },
+    ],
+    验: [
+      { conf:null, text:'进入检验阶段。将当前结论与历史战例（1962年古巴危机、2003年伊拉克战争）进行横向比对验证。{lastRef}的外部视角将作为独立验证维度纳入。' },
+      { conf:null, text:'检验完成。当前结论逻辑自洽，无内部矛盾。建议专家终审后锁定：行动概率{prob}%，首选方案代理人+封锁，时机6个月以上。' },
+    ],
+  },
+  defense: {
+    散: [
+      { conf:0.85, text:'初步军事评估：现阶段美军在加勒比具备充足力量投射能力。有限精确打击技术可行性65%，多域联合作战方案已有预案。但S-400情报若属实，这一评估需要根本性修订。', change:'→0.85' },
+      { conf:0.80, text:'补充军事态势：第二舰队集结是例行演习还是实际预备？两者在装备配置上有明显区别。GEOINT显示F-22部署密度超出正常水平——这是强信号。初步判断行动概率55%。', change:'0.85→0.80' },
+    ],
+    辩: [
+      { conf:0.78, text:'就{lastRef}的外交论点，我持部分异议：历史上的秘密外交渠道在军事压力存在前提下才有效。S-400若确认，必须优先处理防空威胁，否则任何有限打击方案都将面临系统性失败风险。修正有限打击可行性：65%→22%。', change:'0.85→0.78' },
+      { conf:0.72, text:'进一步论证：代理人+封锁方案在军事上成本最低、可控性最强。海上封锁的实施周期约3-6个月，这与时机窗口分析相符。我开始向该方案倾斜，但需要{lastRef}的经济可行性背书。', change:'0.78→0.72' },
+    ],
+    收: [
+      { conf:0.68, text:'综合辩论阶段各方论点，我的立场修正：有限打击从首选方案降为备用方案。代理人+封锁提升为主选方案。这与{lastRef}的外交立场形成协同。时机判断：6个月以上，等待S-400情报最终确认。', change:'0.72→0.68' },
+    ],
+    验: [
+      { conf:0.70, text:'检验：2003年伊拉克战争中，类似的情报不确定性（WMD问题）最终造成决策失误。当前S-400情报确认度0.83，尚低于0.90行动阈值。建议将行动概率维持在{prob}%，待情报补强后重新评估。', change:'→0.70' },
+    ],
+  },
+  state: {
+    散: [
+      { conf:0.72, text:'外交评估：拉美国家整体反对任何单边军事行动。联合国安理会中中俄均可行使否决权。当前外交手段尚未穷尽——贸易制裁、能源封锁、秘密外交渠道均有空间。军事行动将实质性损害"美洲共识"。', change:'→0.72' },
+      { conf:0.68, text:'补充：白宫内部存在两派分歧。鹰派关注战略机会窗口，鸽派担忧拉美外交代价。我的立场：外交成本远高于任何预估——1962年危机最终通过秘密渠道化解，而非军事手段。', change:'0.72→0.68' },
+    ],
+    辩: [
+      { conf:0.72, text:'回应{lastRef}的军事可行性论点：技术可行性不等于战略合理性。S-400若确认部署，俄方将面临极强压力采取反制措施——这会将局部冲突升级为大国直接对抗，外交代价呈指数级上升。', change:'0.68→0.72' },
+      { conf:0.75, text:'就代理人+封锁方案，我认为这实际上是外交与军事的混合方案，可以接受。关键是：封锁需要联合国授权或盟友背书才具合法性。建议优先评估古巴领导层谈判意愿。', change:'0.72→0.75' },
+    ],
+    收: [
+      { conf:0.70, text:'我的最终立场：支持代理人+封锁作为首选方案，行动概率评估30%，时机6个月以上。这与{lastRef}的军事立场在方案选择上已达成共识。若S-400被证伪，可上调至45%。', change:'0.75→0.70' },
+    ],
+    验: [
+      { conf:0.72, text:'检验视角：历史上封锁战略成功率取决于盟友配合度。{lastRef}提到的经济可行性分析支持我的判断：古巴对旅游和侨汇的高度依赖使经济施压极为有效，成本远低于军事行动。', change:'→0.72' },
+    ],
+  },
+  econ: {
+    散: [
+      { conf:0.70, text:'经济代价初步评估：有限打击估算50-80亿美元，全面两栖约200-350亿美元。当前美国联邦债务率（123% GDP）不支持大规模军事开支。能源市场方面：WTI若受影响可能短期涨幅+15-20美元/桶。', change:'→0.70' },
+    ],
+    辩: [
+      { conf:0.68, text:'回应{lastRef}：从经济角度强烈支持封锁方案。古巴GDP约107亿美元，高度依赖旅游（20%）和侨汇（35%），经济施压极为有效。封锁方案的直接财政成本仅约15-25亿美元/年，性价比优于任何军事选项。', change:'0.70→0.68' },
+    ],
+    收: [
+      { conf:0.65, text:'经济立场最终化：支持代理人+封锁方案。财政可持续性评估：3年封锁的总成本低于10天有限打击。{lastRef}的军事评估若采纳此方案，可将行动概率对应的期望损失降低约40%。', change:'0.68→0.65' },
+    ],
+    验: [
+      { conf:0.67, text:'经济验证：2003-2011年古巴GDP年均增速仅2.1%，高度脆弱。当前经济施压若与{lastRef}提到的秘密外交渠道配合，成功概率显著高于军事方案。维持封锁经济可行性评估：高。', change:'→0.67' },
+    ],
+  },
+  intel: {
+    散: [
+      { conf:0.55, text:'当前存在关键情报缺口：S-400组件确认度0.78，未达行动决策阈值（0.90）。建议24小时内完成多源交叉验证：GEOINT重访+SIGINT信号特征比对。俄方介入意图：情报不足，暂标[待核验]。', change:'→0.55' },
+      { conf:0.60, text:'补充：AIS数据确认俄货船此前曾停靠叙利亚拉塔基亚港，有军事物资装卸记录。但操作人员来源无法确认。将S-400确认度上调至0.83，仍属待核验范围。', change:'0.55→0.60' },
+    ],
+    辩: [
+      { conf:0.62, text:'回应{lastRef}：情报缺口是当前最大的决策障碍。若S-400确认度无法在72小时内提升至0.90以上，任何行动决策都将建立在不完整情报基础上——这在历史上是重大失误的前提。建议推迟行动决策评估。', change:'0.60→0.62' },
+      { conf:0.65, text:'最新情报补充：SIGINT侦听到俄古加密通信频率异常（超出日常水平3.2倍），高峰时间与货船停靠时间重叠。这将S-400部署可能性上调，但真实性仍低于行动阈值。建议{lastRef}重新考量行动时机。', change:'0.62→0.65' },
+    ],
+    收: [
+      { conf:0.68, text:'收敛阶段情报总结：S-400确认度0.83，俄方介入概率约40%，外交渠道活跃度中等。支持"6个月以上观望"判断——这给情报体系留出补强窗口，符合{lastRef}的军事审慎立场。', change:'0.65→0.68' },
+    ],
+    验: [
+      { conf:0.70, text:'情报验证：与1962年导弹危机相比，当前情报质量偏低（U-2直接影像 vs 现在的间接推断）。{lastRef}的谨慎立场具有情报学依据。若48小时内无新增确认证据，建议维持当前概率评估：{prob}%。', change:'0.68→0.70' },
+    ],
+  },
+  cn: {
+    散: [
+      { conf:0.62, text:'中方初步评估：美对古巴军事行动概率40%。S-400部署需注意：(1)卫星影像可能是伪装欺骗；(2)即便属实，操作人员可能为俄方人员——这涉及俄方是否直接军事介入的核心问题。中方立场：反对单边军事行动。', change:'→0.62' },
+    ],
+    辩: [
+      { conf:0.65, text:'就{lastRef}的军事行动论点，中方评估：俄方在古巴存在战略利益锚点，任何军事行动将迫使俄方被动表态，提升大国对抗风险。这是被严重低估的变量。中方将在联合国框架内提出反对立场。', change:'0.62→0.65' },
+    ],
+    收: [
+      { conf:0.63, text:'中方最终立场：行动概率35-40%区间，封锁方案对地区稳定影响相对可控。{lastRef}提到的秘密外交渠道——中方可作为可信中间人提供渠道支持，这是降低各方决策风险的现实路径。', change:'0.65→0.63' },
+    ],
+    验: [
+      { conf:0.60, text:'历史验证：1962年危机中，苏联在情报压力和外交沟通双重作用下最终撤退。当前类似机制仍然有效。{lastRef}描述的代理人+封锁方案若配合中方调解渠道，成功率可显著高于纯军事路径。', change:'→0.60' },
+    ],
+  },
+  ru: {
+    散: [
+      { conf:0.70, text:'俄方立场明确：古巴是俄方战略纵深的重要节点。S-400若确认部署，体现了俄方对古巴安全承诺的延伸。任何针对古巴的军事行动，俄方将采取相应反制措施。建议美方评估俄方介入的实际成本。', change:'→0.70' },
+    ],
+    辩: [
+      { conf:0.68, text:'补充评估：{lastRef}提到的封锁方案在法理上构成战争行为，俄方将在联合国框架内提出强烈质疑。同时，俄方后勤能力可在封锁条件下为古巴提供有限支援。这将显著提升封锁的实际成本。', change:'0.70→0.68' },
+    ],
+    收: [
+      { conf:0.65, text:'俄方最终立场：若美方坚持推进任何军事选项，俄方将在其他战略方向采取对等反制。这不是威胁，是战略逻辑的必然结果。支持{lastRef}强调的"穷尽外交手段"立场。', change:'0.68→0.65' },
+    ],
+    验: [
+      { conf:0.62, text:'历史验证视角：1962年苏联撤退的条件是美方承诺不入侵古巴+秘密撤除土耳其导弹。当前若{lastRef}的秘密渠道存在，类似机制仍然可行。俄方不排除通过秘密渠道达成有限妥协。', change:'→0.62' },
+    ],
+  },
+};
+
+// 通用发言模板（新增成员使用）
+const DEFAULT_SPEECH = {
+  散: [{ conf:0.65, text:'基于当前情报态势，本角色对美古局势的初步判断：行动概率中等，建议各方在掌握更多情报确认后再做决策。', change:'→0.65' }],
+  辩: [{ conf:0.62, text:'就{lastRef}的论点，本角色补充视角：局势演变的关键变量仍是S-400情报的最终确认。在此之前，任何确定性结论都需要标注较大的不确定性区间。', change:'0.65→0.62' }],
+  收: [{ conf:0.60, text:'收敛阶段表态：支持代理人+封锁作为当前最优平衡方案，时机窗口6个月以上。同意{lastRef}的综合判断。', change:'0.62→0.60' }],
+  验: [{ conf:0.60, text:'检验阶段补充：当前结论与历史先例基本符合，逻辑自洽。建议专家终审后锁定。', change:'→0.60' }],
+};
+
+// ============================================================
+// 全局状态
+// ============================================================
+let currentPhase = 0;  // 0=散 1=辩 2=收 3=验
+const PHASE_KEYS = ['散','辩','收','验'];
+const PHASE_NAMES = ['发散','辩论','收敛','检验'];
+const PHASE_MODES = ['⚡ 发散阶段','🔥 辩论阶段','🎯 收敛阶段','🔬 检验阶段'];
+let round = 1;
+let isLocked = false;
+let isEditMode = false;
+let selectedVote = '较低（20-35%）';
+let probMain = 32;
+let msgCount = 0;
+let aiMsgCount = 0;   // 仅AI消息
+let s400Triggered = false;
+let lastSpeakerName = '';
+
+// speechIdx: per member, per phase
+let speechIdx = {};
+
+// review state per ai message
+let reviewStates = {}; // msgId -> 'pending'|'approved'|'rejected'|'edited'
+let reviewTexts  = {}; // msgId -> text
+let msgIdCounter = 0;
+let pendingRejectId = null;
+let pendingEditId   = null;
+let pendingAddFactionTarget = null;
+
+// for addMember modal
+let addMemberFactionTarget = null;
+
+// conversation context (last N entries)
+let conversationCtx = [];
+
+// ============================================================
+// Init
+// ============================================================
+window.onload = function() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  renderMemberList();
+  renderQuickBtns();
+  setTimeout(() => addSystemMsg('研讨厅初始化完成。场景：美对古巴军事行动研判。协调主持师已就绪，各AI角色已激活。'), 300);
+  setTimeout(() => addIntelMsg('初始情报已注入：美海军第二舰队加勒比海集结（GEOINT·★★★★★·0.92）、白宫发言人"所有选项都在桌上"（OSINT·★★★★☆·0.75）、俄外长声明"密切关注"（OSINT·★★★★☆·0.90）'), 900);
+  // 初始情报注入后触发自动开场研讨序列
+  setTimeout(() => autoDiscuss('init'), 1600);
+};
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockEl').textContent = now.toISOString().replace('T',' ').substring(0,19);
+}
+
+// ============================================================
+// Member list rendering
+// ============================================================
+function renderMemberList() {
+  const container = document.getElementById('membersScroll');
+  container.innerHTML = '';
+  FACTIONS.forEach(f => {
+    const members = MEMBERS.filter(m => m.factionId === f.id);
+    const fEl = document.createElement('div');
+    fEl.className = 'faction';
+    fEl.id = 'faction-block-' + f.id;
+
+    const weightDisplay = isEditMode
+      ? `<input class="faction-weight-edit" id="fw-${f.id}" type="number" min="0.01" max="1.0" step="0.05" value="${f.weight}" onchange="updateFactionWeight('${f.id}',this.value)" style="display:inline">`
+      : `<span class="faction-weight">权重 ${f.weight}</span>`;
+
+    fEl.innerHTML = `
+      <div class="faction-header" onclick="toggleFaction('faction-list-${f.id}')">
+        <span>▼ <span class="faction-name">${f.name}</span></span>
+        ${weightDisplay}
+      </div>
+      <div id="faction-list-${f.id}" class="member-list"></div>
+      ${isEditMode ? `<div style="padding:0 18px 4px"><button class="btn-icon add-member" onclick="openAddMemberModal('${f.id}')">+ 添加成员</button></div>` : ''}`;
+    container.appendChild(fEl);
+
+    const listEl = fEl.querySelector('#faction-list-' + f.id);
+    members.forEach(m => {
+      listEl.appendChild(buildMemberEl(m));
+    });
+  });
+
+  if (isEditMode) {
+    document.getElementById('addFactionBtn').style.display = '';
+  } else {
+    document.getElementById('addFactionBtn').style.display = 'none';
+  }
+}
+
+function buildMemberEl(m) {
+  const el = document.createElement('div');
+  el.className = 'member' + (isEditMode ? ' edit-active' : '');
+  el.id = 'member-el-' + m.id;
+  if (!isEditMode) el.onclick = () => triggerMemberSpeak(m.id);
+
+  const dotCls = m.status === 'speaking' ? 'dot-speaking' : (m.status === 'online' ? 'dot-online' : 'dot-offline');
+  const typeCls = m.type === 'human' ? 'type-human' : 'type-ai';
+  const typeLabel = m.type === 'human' ? '人' : 'AI';
+
+  if (isEditMode) {
+    el.innerHTML = `
+      <div class="member-dot ${dotCls}"></div>
+      <input class="member-name-input" value="${m.name}" onchange="updateMemberName('${m.id}',this.value)" onclick="event.stopPropagation()">
+      <input class="member-weight-input" type="number" min="0.1" max="1.0" step="0.1" value="${m.weight}" onchange="updateMemberWeight('${m.id}',this.value)" onclick="event.stopPropagation()">
+      <select class="member-type" style="background:#0a1a2e;border:1px solid #2a4a6a;color:#7a9bb5;font-size:9px;padding:1px 2px;border-radius:2px;outline:none" onchange="updateMemberType('${m.id}',this.value)" onclick="event.stopPropagation()">
+        <option value="AI" ${m.type==='AI'?'selected':''}>AI</option>
+        <option value="human" ${m.type==='human'?'selected':''}>人</option>
+      </select>
+      ${m.id!=='you' && m.id!=='host' ? `<button class="btn-icon del" onclick="deleteMember('${m.id}')">✕</button>` : ''}`;
+  } else {
+    el.innerHTML = `
+      <div class="member-dot ${dotCls}"></div>
+      <span class="member-name">${m.name}</span>
+      <span class="member-weight">×${m.weight}</span>
+      <span class="member-type ${typeCls}">${typeLabel}</span>`;
+  }
+  return el;
+}
+
+function toggleFaction(listId) {
+  const el = document.getElementById(listId);
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// ============================================================
+// Edit mode
+// ============================================================
+function toggleEditMode() {
+  isEditMode = !isEditMode;
+  const btn = document.getElementById('editToggleBtn');
+  btn.textContent = isEditMode ? '✓ 完成' : '⚙ 编辑';
+  btn.style.borderColor = isEditMode ? '#4caf50' : '';
+  btn.style.color = isEditMode ? '#4caf50' : '';
+  renderMemberList();
+  if (!isEditMode) renderQuickBtns();
+}
+
+function updateMemberName(id, val) {
+  const m = MEMBERS.find(x => x.id === id);
+  if (m) m.name = val.trim() || m.name;
+}
+function updateMemberWeight(id, val) {
+  const m = MEMBERS.find(x => x.id === id);
+  if (m) m.weight = Math.min(1.0, Math.max(0.1, parseFloat(val)||0.5));
+}
+function updateMemberType(id, val) {
+  const m = MEMBERS.find(x => x.id === id);
+  if (m) m.type = val;
+}
+function updateFactionWeight(id, val) {
+  const f = FACTIONS.find(x => x.id === id);
+  if (f) f.weight = Math.min(1.0, Math.max(0.01, parseFloat(val)||0.1));
+}
+
+function deleteMember(id) {
+  if (!confirm('确认删除该成员？')) return;
+  const idx = MEMBERS.findIndex(x => x.id === id);
+  if (idx >= 0) { MEMBERS.splice(idx, 1); delete SPEECH_BANK[id]; }
+  if (speechIdx[id] !== undefined) delete speechIdx[id];
+  renderMemberList();
+  renderQuickBtns();
+  showToast('成员已删除');
+}
+
+// ============================================================
+// Add member / faction
+// ============================================================
+function openAddMemberModal(factionId) {
+  addMemberFactionTarget = factionId;
+  const sel = document.getElementById('newMemberFaction');
+  sel.innerHTML = FACTIONS.map(f => `<option value="${f.id}" ${f.id===factionId?'selected':''}>${f.name}</option>`).join('');
+  document.getElementById('newMemberName').value = '';
+  document.getElementById('newMemberWeight').value = '0.5';
+  document.getElementById('newMemberType').value = 'AI';
+  document.getElementById('newMemberStance').value = 'neutral';
+  openModal('addMemberModal');
+}
+
+function confirmAddMember() {
+  const factionId = document.getElementById('newMemberFaction').value;
+  const name = document.getElementById('newMemberName').value.trim();
+  const weight = parseFloat(document.getElementById('newMemberWeight').value) || 0.5;
+  const type = document.getElementById('newMemberType').value;
+  const stance = document.getElementById('newMemberStance').value;
+  if (!name) { showToast('请输入成员名称', true); return; }
+  const faction = FACTIONS.find(f => f.id === factionId);
+  const id = 'custom_' + Date.now();
+  MEMBERS.push({ id, factionId, name, weight, type, status:'online', stance });
+  // Build speech content based on stance
+  const stanceHint = stance === 'hawk' ? '鹰派立场，主张采取强硬行动，认为军事选项风险可控' :
+                     stance === 'dove' ? '鸽派立场，主张外交解决，认为军事代价远超预期' :
+                     '中立立场，以数据和情报为导向，避免预设结论';
+  SPEECH_BANK[id] = {
+    散: [{ conf:0.65, text:`（${name}·${faction?faction.name:''}）${stanceHint}。基于当前情报，初步研判行动概率在30-50%区间，关键取决于S-400情报的最终确认结果。`, change:'→0.65' }],
+    辩: [{ conf:0.62, text:`（${name}）回应{lastRef}的论点：${stanceHint}。在当前情报不完整的前提下，需要审慎评估各选项的二阶效应，避免决策失误。`, change:'0.65→0.62' }],
+    收: [{ conf:0.60, text:`（${name}）收敛阶段表态：${stanceHint === '鸽派立场，主张外交解决，认为军事代价远超预期' ? '支持封锁+外交并轨方案' : '支持综合评估后的最优方案'}，时机判断6个月以上。`, change:'0.62→0.60' }],
+    验: [{ conf:0.60, text:`（${name}）检验阶段：当前结论与本角色的专业判断基本一致。建议专家终审后锁定。`, change:'→0.60' }],
+  };
+  speechIdx[id] = 0;
+  closeModal('addMemberModal');
+  renderMemberList();
+  renderQuickBtns();
+  showToast(`✓ 已添加成员：${name}`);
+}
+
+function openAddFactionModal() { openModal('addFactionModal'); }
+
+function confirmAddFaction() {
+  const name = document.getElementById('newFactionName').value.trim();
+  const weight = parseFloat(document.getElementById('newFactionWeight').value) || 0.1;
+  const color = document.getElementById('newFactionColor').value;
+  if (!name) { showToast('请输入阵营名称', true); return; }
+  const id = 'faction_' + Date.now();
+  FACTIONS.push({ id, name, weight, color });
+  closeModal('addFactionModal');
+  renderMemberList();
+  showToast(`✓ 已创建阵营：${name}`);
+}
+
+// ============================================================
+// Quick buttons
+// ============================================================
+function renderQuickBtns() {
+  const container = document.getElementById('quickBtns');
+  container.innerHTML = '';
+  const aiMembers = MEMBERS.filter(m => m.type === 'AI' && m.id !== 'you');
+  aiMembers.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = m.name + '发言';
+    btn.onclick = () => triggerMemberSpeak(m.id);
+    container.appendChild(btn);
+  });
+}
+
+// ============================================================
+// Speech engine
+// ============================================================
+function getSpeechForMember(id) {
+  const member = MEMBERS.find(m => m.id === id);
+  if (!member || member.type === 'human') return null;
+  const bank = SPEECH_BANK[id] || DEFAULT_SPEECH;
+  const phaseKey = PHASE_KEYS[currentPhase];
+  const pool = bank[phaseKey] || bank['散'] || DEFAULT_SPEECH['散'];
+  if (!pool || pool.length === 0) return null;
+  if (!speechIdx[id]) speechIdx[id] = 0;
+  const idx = speechIdx[id] % pool.length;
+  speechIdx[id]++;
+  const speech = { ...pool[idx] };
+  // Inject context reference
+  if (lastSpeakerName && speech.text.includes('{lastRef}')) {
+    speech.text = speech.text.replace(/\{lastRef\}/g, lastSpeakerName);
+  } else {
+    speech.text = speech.text.replace(/\{lastRef\}/g, '前述各方');
+  }
+  speech.text = speech.text.replace(/\{prob\}/g, probMain);
+  return speech;
+}
+
+function triggerMemberSpeak(id) {
+  if (isLocked) { showToast('结论已锁定，研讨已结束', true); return; }
+  const member = MEMBERS.find(m => m.id === id);
+  if (!member) return;
+  if (member.type === 'human') {
+    document.getElementById('inputBox').focus();
+    showToast('请在输入框直接输入您的发言');
+    return;
+  }
+  addAIMsg(id);
+  if (id !== 'host') setTimeout(() => updateProbsRandom(), 800);
+}
+
+// ============================================================
+// Message rendering
+// ============================================================
+function addAIMsg(speakerId) {
+  const member = MEMBERS.find(m => m.id === speakerId);
+  if (!member) return;
+  const speech = getSpeechForMember(speakerId);
+  if (!speech) return;
+  const faction = FACTIONS.find(f => f.id === member.factionId);
+  const color = faction ? faction.color : 'custom';
+  const t = getTime();
+  const msgId = 'msg-' + (++msgIdCounter);
+  reviewStates[msgId] = 'pending';
+  reviewTexts[msgId] = speech.text;
+  aiMsgCount++;
+
+  let confBadge = '';
+  let verifyTag = '';
+  if (speech.conf != null) {
+    const cls = speech.conf >= 0.75 ? 'conf-high' : speech.conf >= 0.55 ? 'conf-mid' : 'conf-low';
+    confBadge = `<span class="confidence-badge ${cls}">置信度 ${speech.conf}</span>`;
+    if (speech.change) confBadge += `<span class="conf-change"> ${speech.change}</span>`;
+    verifyTag = speech.conf >= 0.75
+      ? `<span class="verify-tag ok">✓ 已溯源</span>`
+      : `<span class="verify-tag">⚠ 待核验</span>`;
+  }
+
+  const html = `
+    <div class="msg review-pending" id="${msgId}">
+      <div class="msg-header">
+        <span class="msg-time">${t}</span>
+        <span class="msg-sender ${color}">${member.name}</span>
+        <span class="msg-tag tag-ai">AI·${faction?faction.name:''}·×${member.weight}</span>
+        <span class="review-status-tag rst-pending" id="rst-${msgId}">⏳ 待审</span>
+      </div>
+      <div class="msg-body" id="body-${msgId}">${speech.text}</div>
+      <div class="inline-edit-area" id="iedit-${msgId}">
+        <textarea id="iedit-ta-${msgId}" rows="3">${speech.text}</textarea>
+        <div class="iea-btns">
+          <button class="btn-confirm" style="font-size:11px;padding:4px 12px" onclick="confirmInlineEdit('${msgId}')">保存修改</button>
+          <button class="btn-cancel" style="font-size:11px;padding:4px 12px" onclick="cancelInlineEdit('${msgId}')">取消</button>
+        </div>
+      </div>
+      <div class="msg-footer">
+        ${confBadge}${verifyTag}
+        <div class="review-btns">
+          <button class="rbtn approve" onclick="approveMsg('${msgId}')">✓ 批准</button>
+          <button class="rbtn reject" onclick="openRejectModal('${msgId}','${escapeAttr(speech.text)}')">✗ 驳回</button>
+          <button class="rbtn edit" onclick="openInlineEdit('${msgId}')">✏ 修改</button>
+        </div>
+        <button class="btn-action" onclick="showToast('证据链：已关联'+(Math.floor(Math.random()*3+1))+'条情报源')">证据链▶</button>
+        <button class="btn-action" onclick="showToast('已标记分歧')">⚑ 标记</button>
+      </div>
+    </div>`;
+
+  insertBeforeAnchor(html);
+  lastSpeakerName = member.name;
+  conversationCtx.push({ speaker: member.name, text: speech.text, phase: currentPhase });
+  if (conversationCtx.length > 20) conversationCtx.shift();
+
+  // highlight active speaker
+  document.querySelectorAll('.member').forEach(m => m.classList.remove('active-speaker'));
+  const memberEl = document.getElementById('member-el-' + speakerId);
+  if (memberEl) memberEl.classList.add('active-speaker');
+
+  scrollBottom(); msgCount++; updateStats(); updateReviewStats();
+}
+
+function addHumanMsg(text) {
+  const t = getTime();
+  const html = `
+    <div class="msg">
+      <div class="msg-header">
+        <span class="msg-time">${t}</span>
+        <span class="msg-sender host">您（专家·终裁）</span>
+        <span class="msg-tag tag-human">真人</span>
+      </div>
+      <div class="msg-body" style="border-color:#4caf50;">${escapeHtml(text)}</div>
+      <div class="msg-footer">
+        <span class="confidence-badge conf-high" style="border-color:#8bc34a;color:#8bc34a">人工输入</span>
+        <button class="btn-action" onclick="humanTriggerAI()">触发AI重评</button>
+      </div>
+    </div>`;
+  insertBeforeAnchor(html);
+  lastSpeakerName = '您（专家）';
+  conversationCtx.push({ speaker: '您（专家）', text, phase: currentPhase });
+  if (conversationCtx.length > 20) conversationCtx.shift();
+  scrollBottom(); msgCount++; updateStats();
+}
+
+function addSystemMsg(text) {
+  const t = getTime();
+  const html = `
+    <div class="msg">
+      <div class="msg-header"><span class="msg-time">${t}</span><span class="msg-sender system">⚙ 系统</span></div>
+      <div class="msg-body system-msg">${text}</div>
+    </div>`;
+  insertBeforeAnchor(html);
+  scrollBottom(); msgCount++; updateStats();
+}
+
+function addIntelMsg(text) {
+  const t = getTime();
+  const html = `
+    <div class="msg">
+      <div class="msg-header"><span class="msg-time">${t}</span><span class="msg-sender system">🔴 情报注入</span><span class="msg-tag tag-system">INTEL</span></div>
+      <div class="msg-body intel-msg"><span class="intel-badge">⚡ 新情报</span><br>${text}</div>
+      <div class="trigger-notice">⚡ 已触发全系统二次研判，各Agent正在更新评估...</div>
+    </div>`;
+  insertBeforeAnchor(html);
+  scrollBottom(); msgCount++; updateStats();
+}
+
+function insertBeforeAnchor(html) {
+  const anchor = document.getElementById('scrollAnchor');
+  const container = document.getElementById('chatMessages');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const el = tmp.firstElementChild;
+  el.style.animation = 'fadeIn .3s ease';
+  container.insertBefore(el, anchor);
+}
+
+// ============================================================
+// Review system
+// ============================================================
+function approveMsg(msgId) {
+  reviewStates[msgId] = 'approved';
+  updateMsgReviewUI(msgId);
+  updateReviewStats();
+  showToast('✓ 已批准该发言');
+}
+
+function openRejectModal(msgId, previewText) {
+  pendingRejectId = msgId;
+  document.getElementById('rejectMsgPreview').textContent = previewText.substring(0, 120) + (previewText.length > 120 ? '...' : '');
+  document.getElementById('rejectReason').value = '';
+  openModal('rejectModal');
+}
+
+function confirmReject() {
+  if (!pendingRejectId) return;
+  const reason = document.getElementById('rejectReason').value.trim() || '（未注明原因）';
+  const msgId = pendingRejectId;
+  reviewStates[msgId] = 'rejected';
+  // Append rejection note to body
+  const body = document.getElementById('body-' + msgId);
+  if (body) {
+    body.innerHTML += `<div style="margin-top:6px;padding:4px 8px;background:#2a0a0a;border-radius:3px;font-size:11px;color:#f44336">✗ 专家驳回：${escapeHtml(reason)}</div>`;
+  }
+  updateMsgReviewUI(msgId);
+  updateReviewStats();
+  closeModal('rejectModal');
+  showToast('已驳回，正在触发该角色重新发言...', true);
+  // find which member sent this msg and re-speak
+  setTimeout(() => {
+    const msgEl = document.getElementById(msgId);
+    if (msgEl) {
+      const senderEl = msgEl.querySelector('.msg-sender');
+      if (senderEl) {
+        const senderName = senderEl.textContent;
+        const m = MEMBERS.find(x => x.name === senderName && x.type === 'AI');
+        if (m) addAIMsg(m.id);
+      }
+    }
+  }, 1000);
+}
+
+function openInlineEdit(msgId) {
+  const area = document.getElementById('iedit-' + msgId);
+  const ta = document.getElementById('iedit-ta-' + msgId);
+  if (!area || !ta) return;
+  ta.value = reviewTexts[msgId] || document.getElementById('body-' + msgId)?.textContent || '';
+  area.style.display = '';
+}
+function cancelInlineEdit(msgId) {
+  const area = document.getElementById('iedit-' + msgId);
+  if (area) area.style.display = 'none';
+}
+function confirmInlineEdit(msgId) {
+  const ta = document.getElementById('iedit-ta-' + msgId);
+  if (!ta) return;
+  const newText = ta.value.trim();
+  if (!newText) return;
+  reviewTexts[msgId] = newText;
+  const body = document.getElementById('body-' + msgId);
+  if (body) body.innerHTML = escapeHtml(newText) + `<div style="margin-top:5px;font-size:10px;color:#ff9800">✏ 专家已修改</div>`;
+  reviewStates[msgId] = 'edited';
+  cancelInlineEdit(msgId);
+  updateMsgReviewUI(msgId);
+  updateReviewStats();
+  showToast('✏ 修改已保存');
+}
+
+function updateMsgReviewUI(msgId) {
+  const state = reviewStates[msgId];
+  const msgEl = document.getElementById(msgId);
+  if (!msgEl) return;
+  msgEl.className = 'msg review-' + state;
+  const rstEl = document.getElementById('rst-' + msgId);
+  if (rstEl) {
+    rstEl.className = 'review-status-tag rst-' + state;
+    rstEl.textContent = { approved:'✓ 已批准', rejected:'✗ 已驳回', edited:'✏ 已修改', pending:'⏳ 待审' }[state] || '⏳ 待审';
+  }
+  // hide review btns after action (except edited allows re-edit)
+  if (state === 'approved' || state === 'rejected') {
+    const reviewBtns = msgEl.querySelector('.review-btns');
+    if (reviewBtns) reviewBtns.style.display = 'none';
+  }
+}
+
+function updateReviewStats() {
+  const counts = { approved:0, pending:0, rejected:0, edited:0 };
+  Object.values(reviewStates).forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+  document.getElementById('rstat-approved').textContent = `✓ 批准 ${counts.approved}`;
+  document.getElementById('rstat-pending').textContent = `⏳ 待审 ${counts.pending}`;
+  document.getElementById('rstat-rejected').textContent = `✗ 驳回 ${counts.rejected}`;
+  document.getElementById('rstat-edited').textContent = `✏ 修改 ${counts.edited}`;
+}
+
+function openReviewPanel() {
+  const container = document.getElementById('reviewListContainer');
+  container.innerHTML = '';
+  const aiMsgs = document.querySelectorAll('.msg[id^="msg-"]');
+  if (aiMsgs.length === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:#7a9bb5;text-align:center;padding:20px">暂无AI发言需要审核</div>';
+  }
+  aiMsgs.forEach(msgEl => {
+    const msgId = msgEl.id;
+    const state = reviewStates[msgId] || 'pending';
+    const senderEl = msgEl.querySelector('.msg-sender');
+    const bodyEl = msgEl.querySelector('.msg-body');
+    const senderName = senderEl ? senderEl.textContent : '未知';
+    const bodyText = reviewTexts[msgId] || (bodyEl ? bodyEl.textContent.substring(0, 120) : '');
+
+    const stateLabel = { approved:'✓ 已批准', rejected:'✗ 已驳回', edited:'✏ 已修改', pending:'⏳ 待审' }[state];
+    const stateColor = { approved:'#4caf50', rejected:'#f44336', edited:'#ff9800', pending:'#607d8b' }[state];
+
+    const item = document.createElement('div');
+    item.className = 'review-list-item';
+    item.style.borderColor = stateColor;
+    item.innerHTML = `
+      <div class="rli-header">
+        <strong style="color:#c8d8e8;font-size:11px">${senderName}</strong>
+        <span style="font-size:10px;color:${stateColor};border:1px solid ${stateColor};padding:1px 6px;border-radius:2px">${stateLabel}</span>
+      </div>
+      <div class="rli-text">${escapeHtml(bodyText).substring(0,120)}${bodyText.length>120?'...':''}</div>
+      <div class="rli-btns">
+        ${state!=='approved' ? `<button class="rbtn approve" onclick="approveMsg('${msgId}');renderReviewPanelItem(this.closest('.review-list-item'),'${msgId}')">✓ 批准</button>` : ''}
+        ${state!=='rejected' ? `<button class="rbtn reject" onclick="openRejectModal('${msgId}','${escapeAttr(bodyText)}');closeModal('reviewPanel')">✗ 驳回</button>` : ''}
+        ${state!=='edited' ? `<button class="rbtn edit" onclick="closeModal('reviewPanel');openInlineEdit('${msgId}')">✏ 修改</button>` : ''}
+      </div>`;
+    container.appendChild(item);
+  });
+
+  const counts = { approved:0, pending:0, rejected:0, edited:0 };
+  Object.values(reviewStates).forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+  document.getElementById('reviewPanelStats').textContent =
+    `已批准${counts.approved} | 待审${counts.pending} | 驳回${counts.rejected} | 修改${counts.edited}`;
+  openModal('reviewPanel');
+}
+
+function approveAll() {
+  Object.keys(reviewStates).forEach(id => {
+    if (reviewStates[id] === 'pending') {
+      reviewStates[id] = 'approved';
+      updateMsgReviewUI(id);
+    }
+  });
+  updateReviewStats();
+  closeModal('reviewPanel');
+  showToast('✓ 所有待审发言已批准');
+}
+
+// ============================================================
+// Human send
+// ============================================================
+function sendHuman() {
+  const box = document.getElementById('inputBox');
+  const text = box.value.trim();
+  if (!text) return;
+  addHumanMsg(text);
+  box.value = ''; box.style.height = 'auto';
+  // 人工发言后触发自动研讨序列
+  setTimeout(() => autoDiscuss('human'), 1000);
+}
+
+function humanTriggerAI() {
+  setTimeout(() => autoDiscuss('human'), 200);
+}
+
+// ============================================================
+// 自动研讨序列
+// trigger: 'init'   — 初始情报注入后的开场研讨
+//          'intel'  — 新情报注入后的二次研判
+//          'human'  — 人工发言后的AI响应
+// ============================================================
+let autoDiscussTimer = null;   // 防止并发触发
+
+function autoDiscuss(trigger) {
+  if (isLocked) return;
+  // 清除上一次未完成的序列（防止快速连续触发堆叠）
+  if (autoDiscussTimer) { clearTimeout(autoDiscussTimer); autoDiscussTimer = null; }
+
+  // 按触发类型和当前阶段决定发言序列
+  // 序列格式：[{ id, delay }]  delay 单位 ms，相对于上一条累加
+  let sequence = [];
+
+  if (trigger === 'init') {
+    // 开场：主持师开场 → 情报总监评估 → 国防部长初判 → 国务卿外交视角
+    sequence = [
+      { id: 'host',     delay: 0    },
+      { id: 'intel',    delay: 2000 },
+      { id: 'defense',  delay: 2200 },
+      { id: 'state',    delay: 2200 },
+    ];
+  } else if (trigger === 'intel') {
+    // 情报注入：情报总监第一时间响应 → 国防部长军事修正 → 国务卿外交评估 → 主持师小结
+    sequence = [
+      { id: 'intel',    delay: 0    },
+      { id: 'defense',  delay: 2000 },
+      { id: 'state',    delay: 2000 },
+      { id: 'host',     delay: 2200 },
+    ];
+  } else if (trigger === 'human') {
+    // 人工发言后：根据当前阶段决定响应者
+    const phaseResponders = {
+      0: ['host', 'defense', 'intel'],          // 发散：主持/国防/情报
+      1: ['defense', 'state', 'cn'],            // 辩论：国防vs国务卿+中方
+      2: ['host', 'econ', 'state'],             // 收敛：主持+经济+国务卿
+      3: ['host', 'intel', 'ru'],               // 检验：主持+情报+俄方
+    };
+    const pool = (phaseResponders[currentPhase] || ['host', 'defense']).filter(id =>
+      MEMBERS.find(m => m.id === id && m.type === 'AI')
+    );
+    // 取2-3个响应者，避免太多
+    const count = Math.min(pool.length, currentPhase === 1 ? 3 : 2);
+    pool.slice(0, count).forEach((id, i) => {
+      sequence.push({ id, delay: i === 0 ? 0 : 2000 });
+    });
+  }
+
+  // 执行序列：累加延迟，逐条发言
+  let accumulated = 0;
+  sequence.forEach(step => {
+    // 过滤掉不存在的角色（如已被删除）
+    if (!MEMBERS.find(m => m.id === step.id && m.type === 'AI')) return;
+    accumulated += step.delay;
+    autoDiscussTimer = setTimeout(() => {
+      if (!isLocked) {
+        addAIMsg(step.id);
+        if (step.id !== 'host') updateProbsRandom();
+      }
+    }, accumulated);
+  });
+}
+function injectIntel() {
+  const src = document.getElementById('intelSource').value;
+  const cred = parseFloat(document.getElementById('intelCred').value);
+  const content = document.getElementById('intelContent').value.trim();
+  if (!content) { showToast('请输入情报内容', true); return; }
+  closeModal('intelModal');
+  const stars = cred>=0.9?'★★★★★':cred>=0.75?'★★★★☆':cred>=0.55?'★★★☆☆':'★★☆☆☆';
+  addIntelMsg(`${content} | 来源：${src} | 可信度：${stars} ${cred}`);
+  if (content.includes('S-400') || content.includes('防空')) {
+    s400Triggered = true;
+    document.getElementById('conflictS400').style.display = '';
+    document.getElementById('gapExtra').style.display = '';
+    setTimeout(() => updateProbs(32,8,34,58,22,25,52), 1500);
+  } else {
+    setTimeout(() => updateProbsRandom(), 1500);
+  }
+  // 新情报注入后触发自动研讨序列
+  showToast('⚡ 情报已注入，正在触发全系统二次研判...');
+  setTimeout(() => autoDiscuss('intel'), 800);
+}
+
+// ============================================================
+// Vote
+// ============================================================
+function triggerVote() { openModal('voteModal'); }
+function selectVote(el, val) {
+  document.querySelectorAll('.vote-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected'); selectedVote = val;
+}
+function submitVote() {
+  closeModal('voteModal');
+  addSystemMsg(`🗳 加权投票：您的判断为「${selectedVote}」。已汇入多Agent加权计算，正在生成综合投票结论...`);
+  setTimeout(() => addAIMsg('host'), 800);
+  document.getElementById('convStatus').textContent = '投票收敛中';
+  document.getElementById('convStatus').style.color = '#4fc3f7';
+  showToast('投票已提交');
+}
+
+// ============================================================
+// Next round / phase
+// ============================================================
+function triggerNextRound() {
+  round++;
+  if (currentPhase < 3) currentPhase++;
+  document.getElementById('roundLabel').textContent = `第${round}轮`;
+  document.getElementById('roundNum').textContent = `第${round}轮`;
+  updatePhaseUI();
+  addSystemMsg(`▶ 进入第${round}轮研讨。阶段：${PHASE_NAMES[currentPhase]}。各方请结合前序发言，深化论证。`);
+  setTimeout(() => updateProbsRandom(), 500);
+  if (currentPhase >= 2) {
+    document.getElementById('convStatus').textContent = '趋近收敛';
+    document.getElementById('convStatus').style.color = '#4caf50';
+  }
+}
+
+function jumpPhase(idx) {
+  currentPhase = idx;
+  updatePhaseUI();
+  addSystemMsg(`⚡ 手动切换至【${PHASE_NAMES[idx]}】阶段`);
+}
+
+function updatePhaseUI() {
+  ['ph0','ph1','ph2','ph3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'phase-step' + (i<currentPhase?' done':i===currentPhase?' active':'');
+  });
+  document.getElementById('phaseLabel').textContent = '阶段：' + PHASE_NAMES[currentPhase];
+  document.getElementById('chatModeLabel').textContent = PHASE_MODES[currentPhase];
+}
+
+// ============================================================
+// Lock
+// ============================================================
+function lockConclusion() {
+  if (isLocked) { showToast('结论已锁定', true); return; }
+  const pendingCount = Object.values(reviewStates).filter(s => s === 'pending').length;
+  if (pendingCount > 0) {
+    if (!confirm(`仍有 ${pendingCount} 条AI发言未经人工审核。\n建议先完成终审再锁定。\n\n点击"确定"强制锁定，点击"取消"继续审核。`)) return;
+  }
+  isLocked = true;
+  document.getElementById('lockStatus').textContent = '✓ 已锁定';
+  document.getElementById('lockStatus').style.color = '#4caf50';
+  addSystemMsg(`🔒 结论已由专家人工终审并锁定。最终研判：行动概率 ${probMain}%，首选打法：代理人+封锁，时机窗口：6个月以上。AI不再自动修改此结论。`);
+  setTimeout(() => addAIMsg('host'), 1000);
+  showToast('结论已锁定，研判报告可导出');
+}
+
+// ============================================================
+// Reset
+// ============================================================
+function resetSession() {
+  if (!confirm('确认重置所有记录？')) return;
+  const container = document.getElementById('chatMessages');
+  const anchor = document.getElementById('scrollAnchor');
+  while (container.firstChild && container.firstChild !== anchor) container.removeChild(container.firstChild);
+  msgCount = 0; aiMsgCount = 0; round = 1; isLocked = false; currentPhase = 0;
+  s400Triggered = false; lastSpeakerName = ''; conversationCtx = [];
+  speechIdx = {}; reviewStates = {}; reviewTexts = {}; msgIdCounter = 0;
+  document.getElementById('roundLabel').textContent = '第1轮';
+  document.getElementById('roundNum').textContent = '第1轮';
+  document.getElementById('convStatus').textContent = '发散中';
+  document.getElementById('convStatus').style.color = '#f0a500';
+  document.getElementById('lockStatus').textContent = '未锁定';
+  document.getElementById('lockStatus').style.color = '#607d8b';
+  document.getElementById('conflictS400').style.display = 'none';
+  document.getElementById('gapExtra').style.display = 'none';
+  updatePhaseUI();
+  updateProbs(32,8,34,58,22,25,52);
+  updateReviewStats();
+  showToast('会话已重置');
+  setTimeout(() => addSystemMsg('研讨厅已重置。重新开始美对古巴研判场景。'), 300);
+  setTimeout(() => autoDiscuss('init'), 1000);
+}
+
+// ============================================================
+// Export
+// ============================================================
+function exportReport() {
+  const approved = Object.values(reviewStates).filter(s=>s==='approved').length;
+  const pending  = Object.values(reviewStates).filter(s=>s==='pending').length;
+  const lines = [
+    '军事综合集成研讨厅 · 研判报告',
+    '='.repeat(40),
+    `场景：美对古巴军事行动研判`,
+    `生成时间：${new Date().toLocaleString('zh-CN')}`,
+    `研讨轮次：第${round}轮（${PHASE_NAMES[currentPhase]}阶段）| 发言条数：${msgCount}`,
+    '',
+    '【核心结论】',
+    `综合行动概率：${probMain}%`,
+    `首选打法：代理人+封锁（52%）`,
+    `时机窗口：6个月以上（58%）`,
+    '',
+    '【人工终审状态】',
+    `已批准：${approved}条 | 待审：${pending}条 | 驳回：${Object.values(reviewStates).filter(s=>s==='rejected').length}条 | 已修改：${Object.values(reviewStates).filter(s=>s==='edited').length}条`,
+    '',
+    '【关键分歧】',
+    '国防部长 vs 国务卿：军事可行性 vs 外交代价（25pp gap）',
+    '',
+    '【情报缺口】',
+    'S-400确认度待核验 | 俄方介入意图不明',
+    '',
+    '【结论状态】' + (isLocked ? '✓ 已锁定（专家终审）' : '⚠ 未锁定'),
+  ];
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '美对古巴研判报告.txt'; a.click();
+  showToast('研判报告已导出');
+}
+
+// ============================================================
+// Probability
+// ============================================================
+function updateProbs(main,t1,t2,t3,s1,s2,s3) {
+  probMain = main;
+  document.getElementById('mainProb').textContent = main + '%';
+  ['t1','t2','t3','s1','s2','s3'].forEach((id, i) => {
+    const v = [t1,t2,t3,s1,s2,s3][i];
+    document.getElementById(id).textContent = v + '%';
+    const bar = document.getElementById(id+'bar');
+    if (bar) bar.style.width = v + '%';
+  });
+}
+function updateProbsRandom() {
+  const newMain = Math.max(15, Math.min(70, probMain + Math.floor(Math.random()*6)-2));
+  const t1 = Math.max(3, Math.min(25, 8+Math.floor(Math.random()*5)-2));
+  const t3 = Math.max(40, Math.min(72, 58+Math.floor(Math.random()*5)-2));
+  const t2 = 100-t1-t3;
+  const s3 = Math.max(35, Math.min(65, 52+Math.floor(Math.random()*5)-2));
+  const s1 = Math.max(8,  Math.min(38, 22+Math.floor(Math.random()*5)-2));
+  const s2 = 100-s1-s3;
+  updateProbs(newMain,t1,Math.max(5,t2),t3,s1,Math.max(5,s2),s3);
+}
+
+// ============================================================
+// Utility
+// ============================================================
+function getTime() { return new Date().toTimeString().substring(0,8); }
+function scrollBottom() { const c=document.getElementById('chatMessages'); setTimeout(()=>c.scrollTop=c.scrollHeight,50); }
+function updateStats() { document.getElementById('msgCount').textContent = msgCount; }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openIntelModal() { openModal('intelModal'); }
+function showToast(msg, warn) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (warn ? ' warn' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escapeAttr(str) {
+  return String(str).replace(/'/g,'&#39;').replace(/"/g,'&quot;').substring(0,100);
+}
+</script>
+
+<script id="login-wall-script">
+(function(){
+  // Obfuscated credentials (simple XOR, not real security — demo only)
+  var _u = [25,30,26,37,51,57,55,57,52,56];  // jly201510 XORed with 0x41..
+  var _p = [113,102,111,110,86,114,112,85];    // 20260701 XORed
+  // Actually store plaintext in sessionStorage check
+  var _au = 'jly201510';
+  var _ap = '20260701';
+
+  // If already authed this session, hide wall immediately
+  if(sessionStorage.getItem('lw_auth') === '1'){
+    document.getElementById('login-wall').style.display='none';
+    document.getElementById('login-wall-style').remove();
+  }
+
+  // Enter key support
+  document.getElementById('lw-pass').addEventListener('keydown', function(e){
+    if(e.key==='Enter') lwLogin();
+  });
+  document.getElementById('lw-user').addEventListener('keydown', function(e){
+    if(e.key==='Enter') document.getElementById('lw-pass').focus();
+  });
+  // Auto focus
+  setTimeout(function(){ document.getElementById('lw-user').focus(); }, 100);
+})();
+
+function lwLogin(){
+  var u = document.getElementById('lw-user').value.trim();
+  var p = document.getElementById('lw-pass').value;
+  var btn = document.getElementById('lw-btn');
+  var err = document.getElementById('lw-err');
+  var box = document.getElementById('lw-box');
+
+  btn.classList.add('lw-loading');
+  btn.textContent = '验 证 中 ...';
+
+  setTimeout(function(){
+    if(u === 'jly201510' && p === '20260701'){
+      sessionStorage.setItem('lw_auth','1');
+      document.getElementById('login-wall').style.opacity='0';
+      document.getElementById('login-wall').style.transition='opacity .5s';
+      setTimeout(function(){
+        document.getElementById('login-wall').style.display='none';
+        document.getElementById('login-wall-style').remove();
+      }, 500);
+    } else {
+      err.classList.add('show');
+      box.classList.add('shake');
+      setTimeout(function(){ box.classList.remove('shake'); }, 400);
+      btn.classList.remove('lw-loading');
+      btn.textContent = '进 入 系 统';
+      document.getElementById('lw-pass').value = '';
+      document.getElementById('lw-pass').focus();
+    }
+  }, 600);
+}
+</script>
+
+</body>
+</html>
